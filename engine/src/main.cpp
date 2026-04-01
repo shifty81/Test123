@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[])
 {
-    std::cout << "Codename: Subspace starting..." << std::endl;
+    std::cout << "Atlas Engine — Game starting..." << std::endl;
 
     subspace::Engine engine;
     engine.Initialize();

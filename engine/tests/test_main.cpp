@@ -26,7 +26,9 @@
 #include "ship_editor/EditorGrid.h"
 #include "factions/FactionProfile.h"
 #include "factions/SilhouetteProfile.h"
+#ifdef ATLAS_ENABLE_AI
 #include "ai/AIShipBuilder.h"
+#endif
 #include "weapons/WeaponSystem.h"
 #include "ships/ModuleDef.h"
 #include "ships/ShipArchetype.h"
@@ -52,8 +54,10 @@
 #include "procedural/GalaxyGenerator.h"
 #include "quest/QuestSystem.h"
 #include "tutorial/TutorialSystem.h"
+#ifdef ATLAS_ENABLE_AI
 #include "ai/AIDecisionSystem.h"
 #include "ai/AISteeringSystem.h"
+#endif
 #include "core/physics/SpatialHash.h"
 #include "ui/UITypes.h"
 #include "ui/UIElement.h"
@@ -1096,6 +1100,7 @@ static void TestFactions() {
 // ===================================================================
 // 10. AIShipBuilder tests
 // ===================================================================
+#ifdef ATLAS_ENABLE_AI
 static void TestAIShipBuilder() {
     std::cout << "[AIShipBuilder]\n";
 
@@ -1126,6 +1131,7 @@ static void TestAIShipBuilder() {
         TEST("Generated ship has positive mass", ship.totalMass > 0.0f);
     }
 }
+#endif // ATLAS_ENABLE_AI
 
 // ===================================================================
 // 11. Blueprint tests
@@ -3615,6 +3621,7 @@ static void TestTutorialComponentSerialization() {
 // ===================================================================
 // AI Decision System Tests
 // ===================================================================
+#ifdef ATLAS_ENABLE_AI
 static void TestAIPerception() {
     std::cout << "[AIPerception]\n";
 
@@ -3782,6 +3789,7 @@ static void TestAIDecisionSystem() {
     traderAi.personality = AIPersonality::Trader;
     TEST("Trading high for trader", system.CalculateActionPriority(AIState::Trading, traderAi) > 0.7f);
 }
+#endif // ATLAS_ENABLE_AI
 
 // ===================================================================
 // SpatialHash Tests
@@ -3858,6 +3866,7 @@ static void TestSpatialHash() {
 // ===================================================================
 // AISteeringSystem Tests
 // ===================================================================
+#ifdef ATLAS_ENABLE_AI
 static void TestAISteeringSystem() {
     std::cout << "[AISteeringSystem]\n";
 
@@ -4004,6 +4013,7 @@ static void TestAISteeringSystem() {
         TEST("Steering Update applies force X", pc->appliedForce.x > 0.0f);
     }
 }
+#endif // ATLAS_ENABLE_AI
 
 // ===================================================================
 // PhysicsSystem SpatialHash Integration Tests
@@ -8717,7 +8727,7 @@ static void TestEngine() {
         const char* ver = Engine::GetVersionString();
         std::string vs(ver);
         TEST("Version string not empty", !vs.empty());
-        TEST("Version contains Subspace", vs.find("Subspace") != std::string::npos);
+        TEST("Version contains Atlas", vs.find("Atlas") != std::string::npos);
     }
 
     // --- Tick ---
@@ -14722,7 +14732,9 @@ int main() {
     TestEditorRemoveSelected();
     TestEditorValidation();
     TestFactions();
+#ifdef ATLAS_ENABLE_AI
     TestAIShipBuilder();
+#endif
     TestBlueprint();
     TestWeaponSystem();
     TestModuleDef();
@@ -14757,11 +14769,15 @@ int main() {
     TestTutorial();
     TestTutorialSystem();
     TestTutorialComponentSerialization();
+#ifdef ATLAS_ENABLE_AI
     TestAIPerception();
     TestAIComponent();
     TestAIDecisionSystem();
+#endif
     TestSpatialHash();
+#ifdef ATLAS_ENABLE_AI
     TestAISteeringSystem();
+#endif
     TestPhysicsSystemSpatialHash();
     TestUITypes();
     TestUILabel();

@@ -1,4 +1,4 @@
-# Codename: Subspace - Makefile
+# Atlas Engine / Codename: Subspace - Makefile
 # Provides easy commands for common development tasks
 
 # Detect OS
@@ -20,33 +20,49 @@ NPROC := $(shell nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)
 
 .PHONY: help
 help: ## Show this help message
-	@echo "Codename: Subspace - Development Commands"
-	@echo "=========================================="
+	@echo "Atlas Engine — Development Commands"
+	@echo "====================================="
 	@echo ""
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-25s\033[0m %s\n", $$1, $$2}'
 	@echo ""
 
 # ---------------------------------------------------------------------------
-# C++ Engine (CMake)
+# Atlas Engine (CMake) — primary targets
 # ---------------------------------------------------------------------------
 
 .PHONY: build
-build: ## Build C++ engine (Release)
+build: ## Build Atlas Engine + game + editor (Release)
 	@mkdir -p $(LOG_DIR)
 	@mkdir -p engine/build
-	(cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Release && cmake --build . --config Release -j$(NPROC)) 2>&1 | tee $(LOG_DIR)/build_$(TIMESTAMP).log
+	(cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DATLAS_BUILD_EDITOR=ON && cmake --build . --config Release -j$(NPROC)) 2>&1 | tee $(LOG_DIR)/build_$(TIMESTAMP).log
 
 .PHONY: build-debug
-build-debug: ## Build C++ engine (Debug)
+build-debug: ## Build Atlas Engine + game + editor (Debug)
 	@mkdir -p $(LOG_DIR)
 	@mkdir -p engine/build
-	(cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Debug && cmake --build . --config Debug -j$(NPROC)) 2>&1 | tee $(LOG_DIR)/build-debug_$(TIMESTAMP).log
+	(cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Debug -DATLAS_BUILD_EDITOR=ON && cmake --build . --config Debug -j$(NPROC)) 2>&1 | tee $(LOG_DIR)/build-debug_$(TIMESTAMP).log
 
 .PHONY: build-engine
-build-engine: ## Build C++ engine library only (no game executable)
+build-engine: ## Build Atlas Engine library only (no game/editor executable)
 	@mkdir -p $(LOG_DIR)
 	@mkdir -p engine/build
-	(cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DSUBSPACE_BUILD_TESTS=OFF && cmake --build . --config Release --target subspace_engine -j$(NPROC)) 2>&1 | tee $(LOG_DIR)/build-engine_$(TIMESTAMP).log
+	(cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DATLAS_BUILD_TESTS=OFF -DATLAS_BUILD_EDITOR=OFF && cmake --build . --config Release --target atlas_engine -j$(NPROC)) 2>&1 | tee $(LOG_DIR)/build-engine_$(TIMESTAMP).log
+
+.PHONY: build-editor
+build-editor: ## Build standalone Atlas Editor application
+	@mkdir -p $(LOG_DIR)
+	@mkdir -p engine/build
+	(cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DATLAS_BUILD_EDITOR=ON && cmake --build . --config Release --target atlas_editor -j$(NPROC)) 2>&1 | tee $(LOG_DIR)/build-editor_$(TIMESTAMP).log
+
+.PHONY: run-editor
+run-editor: build-editor ## Build and run the Atlas Editor
+	./engine/build/atlas_editor
+
+.PHONY: build-with-ai
+build-with-ai: ## Build Atlas Engine with AI subsystems enabled
+	@mkdir -p $(LOG_DIR)
+	@mkdir -p engine/build
+	(cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DATLAS_ENABLE_AI=ON -DATLAS_BUILD_EDITOR=ON && cmake --build . --config Release -j$(NPROC)) 2>&1 | tee $(LOG_DIR)/build-with-ai_$(TIMESTAMP).log
 
 # ---------------------------------------------------------------------------
 # C# Prototype (dotnet)
@@ -69,10 +85,10 @@ run-csharp: ## Run C# prototype
 test: test-engine ## Run all tests
 
 .PHONY: test-engine
-test-engine: ## Build and run C++ engine tests
+test-engine: ## Build and run Atlas Engine tests
 	@mkdir -p engine/build
-	cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DSUBSPACE_BUILD_TESTS=ON && cmake --build . --config Release -j$(NPROC)
-	cd engine/build && ./subspace_tests
+	cd engine/build && cmake .. -DCMAKE_BUILD_TYPE=Release -DATLAS_BUILD_TESTS=ON && cmake --build . --config Release -j$(NPROC)
+	cd engine/build && ./atlas_tests
 
 # ---------------------------------------------------------------------------
 # Tools
