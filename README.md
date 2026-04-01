@@ -1,52 +1,43 @@
-# Codename:Subspace — Space Game Engine
+# Codename:Subspace — Atlas Engine & Editor
 
-An Avorion-inspired space exploration and combat game engine, actively transitioning to a **C++17 / OpenGL** core. The new C++ engine (`engine/`) implements high-performance block-based and modular ship construction, while the C# prototype (`AvorionLike/`) provides a playable reference with 19+ backend systems.
+An Avorion-inspired space exploration and combat game built on the **Atlas Engine** — a C++17 / OpenGL core focused on high-performance block-based and modular ship construction. The project ships two primary applications:
 
-> **🎮 Project Status:** Active Development — C++ engine conversion in progress
+- **`atlas_game`** — the playable game executable
+- **`atlas_editor`** — a standalone ship and world editor
+
+> **🎮 Project Status:** Active Development — Atlas Engine rewrite in progress
 > **🌌 Inspired by:** Avorion, EVE Online, X4: Foundations
-> **🎯 Goal:** Performant, moddable space game with modular ship construction and salvage-driven gameplay
-> **🔧 C++ Engine:** `engine/` — see [Engine README](engine/README.md)
-> **📂 Documentation:** Reorganized into [`docs/`](docs/) — guides, architecture, implementation notes
+> **🎯 Goal:** Performant, moddable space game with modular ship construction and a first-class editor
+> **🔧 Engine:** `engine/` — see [Engine README](engine/README.md)
+> **📂 Documentation:** [`docs/`](docs/) — guides, architecture, implementation notes
 
-> **✨ LATEST (Mar 2026):**
-> - 🔍 **C++ SCANNING SYSTEM** — Ship-mounted scanners with 4 types, 6 signature classes, distance-based scan speed, concurrent scan limits ✨ **NEW!**
-> - 🔧 **C++ SALVAGE SYSTEM** — Wreck/debris salvaging with 5 tiers, 8 wreck types, integrity-based yield, material collection ✨ **NEW!**
-> - 🚢 **C++ FLEET COMMAND SYSTEM** — Fleet management with 8 order types, 6 roles, morale tracking, order queuing ✨ **NEW!**
-> - 🎒 **C++ INVENTORY SYSTEM** — Per-entity item inventory with 5 rarity tiers, weight limits, stacking, category/rarity filtering, transfers, sorting
-> - 🚚 **C++ TRADE ROUTE SYSTEM** — Automated trade routes with waypoint navigation, cargo manifest, profit tracking, loop support
-> - 🚀 **C++ HANGAR/DOCKING SYSTEM** — Ship docking at stations/carriers, 4 bay sizes, approach/docking/launch sequences, ship storage
-> - 🔨 **C++ CRAFTING SYSTEM** — 5 station types, 8 default recipes, concurrent job queues, level gating, speed multipliers
-> - 🤝 **C++ REPUTATION SYSTEM** — Per-faction reputation tracking, 5 standing levels, reputation decay, event history
-> - 🎖️ **C++ FORMATION SYSTEM** — 6 formation patterns (Line, V, Diamond, Circle, Wedge, Column), slot-based positioning
-> - 🛡️ **C++ SHIELD MODULE SYSTEM** — 4 shield types with absorption multipliers, overcharge mechanics, regen delay
-> - ⚡ **C++ STATUS EFFECT SYSTEM** — 6 effect types (EMP, Fire, Radiation, Shield Drain, Engine Jam, Sensor Scramble) with timed expiry
-> - 💎 **C++ LOOT/DROP SYSTEM** — 5 rarity tiers, deterministic seeded rolling, luck multipliers, 3 preset loot tables
-> - 🎯 **C++ AMMUNITION SYSTEM** — AmmoPool with reload mechanics, 5 ammo types, per-weapon-archetype defaults
-> - 🔒 **C++ TARGET LOCK SYSTEM** — Lock-on acquisition, distance-based tracking, configurable break range
-> - 🌌 **C++ SECTOR ANOMALIES** — Nebulas, black holes, radiation zones, ion storms, gravity wells in galaxy generation
-> - 💥 **C++ VOXEL DAMAGE SYSTEM** — Splash/penetrating damage, structural integrity (BFS flood-fill), repair mechanics, fragment separation
-> - 🌳 **C++ OCTREE SPATIAL PARTITIONING** — Hierarchical spatial indexing with sphere/box/nearest-neighbor queries
-> - 🎆 **C++ PARTICLE SYSTEM** — Configurable emitters with 5 effect presets (Explosion, Engine Thrust, Shield Hit, Mining, Hyperdrive)
-> - 🏆 **C++ ACHIEVEMENT SYSTEM** — Event-driven milestones with criteria tracking, serialization, and 8 template achievements
-> - 🧪 **3557 unit tests** passing across all C++ engine systems
-> - 📁 **Repository restructured** — docs, scripts, and assets organized into dedicated directories
-> - 🔧 **C++ MODULAR SHIP SYSTEM** — Hardpoint-based module assembly with 12 module types, 5 ship archetypes, and faction-aware procedural generation
-> - 🚀 **MODULAR SHIP SYSTEM** — Ships built from pre-defined modular parts with hardpoint attachment
-> - 🔨 **BLOCK-BASED CONSTRUCTION** — Voxel system for ship building, damage visualization, and mining
-> - 🎮 **C# PROTOTYPE PLAYABLE** — Full gameplay loop with mining, combat, trading, navigation
+> **✨ LATEST (Apr 2026):**
+> - 🏗️ **ATLAS ENGINE REWRITE** — Engine renamed to AtlasEngine v0.2.0 with clean engine + editor split ✨ **NEW!**
+> - 🖊️ **ATLAS EDITOR** — Standalone editor executable (`atlas_editor`) built alongside the game ✨ **NEW!**
+> - 🚫 **AI-FREE DEFAULT BUILD** — AI subsystems excluded from the default build; enable with `-DATLAS_ENABLE_AI=ON` ✨ **NEW!**
+> - 🔍 **C++ SCANNING SYSTEM** — Ship-mounted scanners with 4 types, 6 signature classes, distance-based scan speed, concurrent scan limits
+> - 🔧 **C++ SALVAGE SYSTEM** — Wreck/debris salvaging with 5 tiers, 8 wreck types, integrity-based yield, material collection
+> - 🚢 **C++ FLEET COMMAND SYSTEM** — Fleet management with 8 order types, 6 roles, morale tracking, order queuing
+> - 🎒 **C++ INVENTORY SYSTEM** — Per-entity item inventory with 5 rarity tiers, weight limits, stacking
+> - 🚚 **C++ TRADE ROUTE SYSTEM** — Automated trade routes with waypoint navigation, cargo manifest, profit tracking
+> - 🚀 **C++ HANGAR/DOCKING SYSTEM** — Ship docking at stations/carriers, 4 bay sizes, docking sequences
+> - 🧪 **3657 unit tests** passing across all C++ engine systems
 > - 🎭 **5 Factions** — Iron Dominion, Nomad Continuum, Helix Covenant, Ashen Clades, Ascended Archive
 
 ## 📁 Repository Structure
 
 ```
 Codename-Subspace/
-├── engine/              # C++ engine (primary development focus)
-│   ├── include/         #   Public headers (ships, rendering, factions, weapons, AI, networking)
+├── engine/              # Atlas Engine (C++17/OpenGL — primary development)
+│   ├── include/         #   Public headers (core, ships, rendering, editor, weapons, networking)
 │   ├── src/             #   Implementations
-│   ├── tests/           #   3557 unit tests
+│   │   ├── main.cpp         #   Game entry point  → atlas_game
+│   │   ├── editor_main.cpp  #   Editor entry point → atlas_editor  ✨ NEW
+│   │   └── ...
+│   ├── tests/           #   3657 unit tests
 │   ├── data/            #   JSON faction definitions
-│   └── CMakeLists.txt   #   CMake build configuration
-├── AvorionLike/         # C# prototype (playable reference)
+│   └── CMakeLists.txt   #   CMake build configuration (AtlasEngine project)
+├── AvorionLike/         # C# prototype (playable reference, legacy)
 ├── docs/                # Documentation
 │   ├── guides/          #   Feature guides and tutorials
 │   ├── architecture/    #   Architecture documents
@@ -61,61 +52,90 @@ Codename-Subspace/
 └── README.md            # This file
 ```
 
-## 🔧 C++ Engine (Primary Focus)
+## 🔧 Atlas Engine (Primary Focus)
 
-The C++ engine implements high-performance ship systems with data-first design. See [engine/README.md](engine/README.md) for full details.
+The Atlas Engine is the C++17 / OpenGL core of the project. It produces two executables:
 
-### Building the C++ Engine
+| Executable | Purpose |
+|------------|---------|
+| `atlas_game` | The playable game |
+| `atlas_editor` | Standalone ship / world editor |
+
+### Building
 
 ```bash
 cd engine
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
-# Run tests (3557 tests)
-./build/subspace_tests
-
 # Run the game
-./build/subspace_game
+./build/atlas_game
+
+# Run the standalone editor
+./build/atlas_editor
+
+# Run tests (3657 tests)
+./build/atlas_tests
 ```
 
-### Key C++ Systems
+### CMake Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `ATLAS_BUILD_EDITOR` | `ON` | Build the standalone `atlas_editor` executable |
+| `ATLAS_BUILD_TESTS` | `ON` | Build the `atlas_tests` executable |
+| `ATLAS_ENABLE_AI` | `OFF` | Include AI subsystems (AIDecisionSystem, AIShipBuilder, AISteeringSystem) |
+
+```bash
+# Build with AI enabled
+cmake -B build -DATLAS_ENABLE_AI=ON
+
+# Build engine library only (no game/editor/tests)
+cmake -B build -DATLAS_BUILD_EDITOR=OFF -DATLAS_BUILD_TESTS=OFF
+cmake --build build --target atlas_engine
+```
+
+### Makefile Shortcuts
+
+```bash
+make build           # Build engine + game + editor (Release)
+make build-debug     # Build (Debug)
+make build-engine    # Engine library only
+make build-editor    # Editor only
+make run-editor      # Build & run the editor
+make build-with-ai   # Build with AI subsystems enabled
+make test-engine     # Build & run all 3657 unit tests
+make build-csharp    # Build C# prototype (legacy)
+```
+
+### Key Systems
 
 | System | Status | Description |
 |--------|--------|-------------|
 | Block-based Ships | ✅ Complete | Integer grid, 7 materials, 5 shapes, per-block damage |
-| **Modular Ships** | ✅ **New** | **Hardpoint-based modules, 12 module types, graph-based hierarchy** |
-| **Ship Archetypes** | ✅ **New** | **5 archetypes (Interceptor→Battleship), procedural BFS assembly** |
-| Ship Editor | ✅ Complete | Ghost preview, symmetry tools, state machine |
+| Modular Ships | ✅ Complete | Hardpoint-based modules, 12 module types, graph-based hierarchy |
+| Ship Archetypes | ✅ Complete | 5 archetypes (Interceptor→Battleship), procedural BFS assembly |
+| **Ship Editor** | ✅ Complete | Ghost preview, symmetry tools, state machine, undo/redo — exposed via `atlas_editor` |
 | Weapon System | ✅ Complete | 5 weapon archetypes, hardpoint validation, turrets |
-| AI Ship Builder | ✅ Complete | Faction-aware procedural generation, tier-based scaling |
 | Faction System | ✅ Complete | 5 factions with silhouette profiles and shape language |
 | Blueprint System | ✅ Complete | JSON serialization, deterministic loading |
 | Rendering | ✅ Complete | Instanced batching, greedy meshing, chunk system |
 | Networking | ✅ Complete | Deterministic build commands for multiplayer replication |
-| **Particle System** | ✅ **New** | **Configurable emitters, 4 shapes, 5 effect presets, gravity, color interpolation** |
-| **Achievement System** | ✅ **New** | **Event-driven criteria tracking, save-game persistence, 8 template achievements** |
-| **Voxel Damage System** | ✅ **New** | **Splash/penetrating damage, structural integrity (BFS), repair, fragmentation** |
-| **Octree Spatial Partitioning** | ✅ **New** | **Hierarchical spatial indexing, sphere/box/nearest queries, subdivision** |
-| **Ammunition System** | ✅ **New** | **AmmoPool with 5 ammo types, reload mechanics, per-weapon defaults, damage multipliers** |
-| **Target Lock System** | ✅ **New** | **Lock-on acquisition/tracking, distance-based break, configurable range/timing** |
-| **Sector Anomalies** | ✅ **New** | **5 anomaly types (Nebula, BlackHole, RadiationZone, IonStorm, GravityWell) in galaxy gen** |
-| **Shield Module System** | ✅ **New** | **4 shield types (Standard, Hardened, Phase, Regenerative), overcharge, regen delay, absorption multipliers** |
-| **Status Effect System** | ✅ **New** | **6 effect types (EMP, Fire, Radiation, Shield Drain, Engine Jam, Sensor Scramble), resistance, timed expiry** |
-| **Loot/Drop System** | ✅ **New** | **5 rarity tiers, deterministic seeded rolling, luck multipliers, 3 preset loot tables** |
-| **Crafting System** | ✅ **New** | **5 station types, 8 default recipes, concurrent job queues, level gating, speed multipliers** |
-| **Reputation System** | ✅ **New** | **Per-faction reputation tracking, 5 standing levels, reputation decay, event history** |
-| **Formation System** | ✅ **New** | **6 formation patterns (Line, V, Diamond, Circle, Wedge, Column), slot-based positioning** |
-| **Inventory System** | ✅ **New** | **Per-entity item inventory, 5 rarity tiers, weight limits, stacking, category/rarity filtering, transfers** |
-| **Trade Route System** | ✅ **New** | **Automated trade routes, waypoint navigation, cargo manifest, profit tracking, loop support** |
-| **Hangar/Docking System** | ✅ **New** | **Ship docking at stations/carriers, 4 bay sizes, docking sequences, ship storage** |
-| **Scanning System** | ✅ **New** | **4 scanner types (Passive, Active, Deep, Military), 6 signature classes, distance-based scanning** |
-| **Salvage System** | ✅ **New** | **Wreck/debris salvaging, 5 tiers, 8 wreck types, integrity-based yield, material collection** |
-| **Fleet Command System** | ✅ **New** | **8 order types (Patrol, Mine, Trade, Attack, Escort, Defend, Scout), 6 roles, morale tracking** |
+| Particle System | ✅ Complete | Configurable emitters, 4 shapes, 5 effect presets |
+| Achievement System | ✅ Complete | Event-driven criteria tracking, save-game persistence |
+| Voxel Damage System | ✅ Complete | Splash/penetrating damage, structural integrity (BFS), repair |
+| Octree Spatial Partitioning | ✅ Complete | Hierarchical spatial indexing, sphere/box/nearest queries |
+| Inventory System | ✅ Complete | Per-entity item inventory, 5 rarity tiers, weight limits |
+| Trade Route System | ✅ Complete | Automated trade routes, profit tracking, loop support |
+| Hangar/Docking System | ✅ Complete | 4 bay sizes, docking sequences, ship storage |
+| Scanning System | ✅ Complete | 4 scanner types, 6 signature classes, distance-based scanning |
+| Salvage System | ✅ Complete | 5 tiers, 8 wreck types, integrity-based yield |
+| Fleet Command System | ✅ Complete | 8 order types, 6 roles, morale tracking |
+| **AI Subsystems** | ⚙️ Optional | Disabled by default; enable with `-DATLAS_ENABLE_AI=ON` |
 
-## 🎮 C# Prototype
+## 🎮 C# Prototype (Legacy Reference)
 
-The C# prototype remains playable with 19+ backend systems. See [docs/guides/HOW_TO_BUILD_AND_RUN.md](docs/guides/HOW_TO_BUILD_AND_RUN.md).
+The C# prototype remains playable with 19+ backend systems and serves as a reference implementation. See [docs/guides/HOW_TO_BUILD_AND_RUN.md](docs/guides/HOW_TO_BUILD_AND_RUN.md).
 
 ```bash
 dotnet run

@@ -1,13 +1,26 @@
-# Codename: Subspace — C++ Engine
+# Atlas Engine — C++17 / OpenGL Game Engine
 
-The new C++ engine implements Avorion-style block-based and modular ship building systems. It is built with **C++17** and **OpenGL**, using **CMake** as the build system. Design documents are in [`docs/design/`](../docs/design/).
+The **Atlas Engine** is the C++17 / OpenGL core of the Codename:Subspace project. It implements Avorion-style block-based and modular ship building, produces two runnable applications (`atlas_game` and `atlas_editor`), and is designed to be lean — AI subsystems are excluded from the default build.
+
+Design documents are in [`docs/design/`](../docs/design/).
 
 ## Architecture Overview
 
 The engine is organized into modular subsystems that follow the design philosophy: **"Ships are data first, visuals second."**
 
+Two entry points are built:
+
+| Target | Source | Purpose |
+|--------|--------|---------|
+| `atlas_game` | `src/main.cpp` | The playable game |
+| `atlas_editor` | `src/editor_main.cpp` | Standalone ship/world editor |
+
 ```
 engine/
+├── src/
+│   ├── main.cpp         # Game entry point  → atlas_game
+│   ├── editor_main.cpp  # Editor entry point → atlas_editor
+│   └── ...              # Subsystem implementations
 ├── include/                    # Public headers
 │   ├── core/                   # Math types, engine core
 │   │   ├── Math.h              # Vector3Int, Vector3 (integer grid math)
@@ -163,20 +176,14 @@ engine/
 - C++17 compatible compiler (GCC 7+, Clang 5+, MSVC 2017+)
 - OpenGL development libraries
 
-### Build with Visual Studio (Windows — Recommended)
+### CMake Options
 
-The engine integrates directly into the Visual Studio solution:
-
-1. Open `AvorionLike.sln` in Visual Studio 2022
-2. In Solution Explorer, the **C++ Engine** folder contains:
-   - **SubspaceEngine** — Static library with all engine systems
-   - **SubspaceGame** — Game executable
-   - **SubspaceTests** — 1158 unit tests
-3. Select **Debug | x64** or **Release | x64**
-4. Build → Build Solution (Ctrl+Shift+B)
-5. Right-click SubspaceTests → Set as Startup Project → F5 to run tests
-
-**Requirements**: Visual Studio 2022 with "Desktop development with C++" workload.
+| Option | Default | Description |
+|--------|---------|-------------|
+| `ATLAS_BUILD_EDITOR` | `ON` | Build the standalone `atlas_editor` executable |
+| `ATLAS_BUILD_TESTS` | `ON` | Build the `atlas_tests` executable |
+| `ATLAS_ENABLE_AI` | `OFF` | Include AI subsystems (AIDecisionSystem, AIShipBuilder, AISteeringSystem) |
+| `SUBSPACE_USE_GLFW` | `OFF` | Find and link GLFW3 for windowing |
 
 ### Build with CMake (all platforms)
 
@@ -186,16 +193,31 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 
 # Run the game
-./build/subspace_game        # Linux / macOS
-.\build\subspace_game.exe    # Windows (PowerShell)
+./build/atlas_game        # Linux / macOS
+.\build\atlas_game.exe    # Windows (PowerShell)
 
-# Run tests (1158 tests)
-./build/subspace_tests       # Linux / macOS
-.\build\subspace_tests.exe   # Windows (PowerShell)
+# Run the standalone editor
+./build/atlas_editor        # Linux / macOS
+.\build\atlas_editor.exe    # Windows (PowerShell)
+
+# Run tests (3657 tests)
+./build/atlas_tests        # Linux / macOS
+.\build\atlas_tests.exe    # Windows (PowerShell)
 ```
 
-> **Note:** On Windows with Visual Studio, you may also build a specific
-> configuration with `cmake --build build --config Release`.
+### Build with AI subsystems enabled
+
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DATLAS_ENABLE_AI=ON
+cmake --build build
+```
+
+### Build engine library only (no game/editor/tests)
+
+```bash
+cmake -B build -DATLAS_BUILD_EDITOR=OFF -DATLAS_BUILD_TESTS=OFF
+cmake --build build --target atlas_engine
+```
 
 ### Optional: GLFW for windowing
 

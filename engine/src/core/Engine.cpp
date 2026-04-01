@@ -15,6 +15,9 @@
 #include "rendering/ParticleSystem.h"
 #include "achievement/AchievementSystem.h"
 #include "ui/UISystem.h"
+#ifdef ATLAS_ENABLE_AI
+#include "ai/AIDecisionSystem.h"
+#endif
 
 #include <algorithm>
 #include <iostream>
@@ -22,7 +25,7 @@
 
 namespace subspace {
 
-static constexpr const char* kVersion = "SubspaceEngine v0.2.0";
+static constexpr const char* kVersion = "AtlasEngine v0.2.0";
 static constexpr const char* kLogCategory = "Engine";
 
 // ---------------------------------------------------------------------------
@@ -192,7 +195,9 @@ void Engine::RegisterSystems()
     _entityManager.RegisterSystem(std::make_unique<CombatSystem>());
     _entityManager.RegisterSystem(std::make_unique<NavigationSystem>());
     _entityManager.RegisterSystem(std::make_unique<PowerSystem>());
+#ifdef ATLAS_ENABLE_AI
     _entityManager.RegisterSystem(std::make_unique<AIDecisionSystem>());
+#endif
     _entityManager.RegisterSystem(std::make_unique<MiningSystem>());
     _entityManager.RegisterSystem(std::make_unique<QuestSystem>());
     _entityManager.RegisterSystem(std::make_unique<TutorialSystem>());

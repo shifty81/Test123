@@ -17,7 +17,9 @@ class NavigationSystem;
 class QuestSystem;
 class TutorialSystem;
 class PowerSystem;
+#ifdef ATLAS_ENABLE_AI
 class AIDecisionSystem;
+#endif
 class MiningSystem;
 class UISystem;
 class ParticleSystem;

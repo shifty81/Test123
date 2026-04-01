@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(SubspaceEngine VERSION 0.1.0 LANGUAGES CXX)
+project(AtlasEngine VERSION 0.2.0 LANGUAGES CXX)
 
 # ---------------------------------------------------------------------------
 # Global compiler settings
@@ -30,7 +30,10 @@ endforeach()
 # ---------------------------------------------------------------------------
 # Options
 # ---------------------------------------------------------------------------
-option(SUBSPACE_BUILD_TESTS "Build the test suite" ON)
+option(ATLAS_BUILD_TESTS   "Build the test suite"                   ON)
+option(ATLAS_BUILD_EDITOR  "Build the standalone Atlas editor app"  ON)
+option(ATLAS_ENABLE_AI     "Include AI subsystems in the engine"    OFF)
+option(SUBSPACE_BUILD_TESTS "Build the test suite (legacy alias)"   ON)
 option(SUBSPACE_USE_GLFW    "Find and link GLFW3 (install via your package manager or vcpkg)" OFF)
 
 # ---------------------------------------------------------------------------
@@ -51,10 +54,10 @@ endif()
 
 # ---------------------------------------------------------------------------
 # Collect source files from every src/ subdirectory
+# AI sources are excluded unless ATLAS_ENABLE_AI is ON
 # ---------------------------------------------------------------------------
 file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/audio/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/ai/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/combat/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/debug_tools/*.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/core/*.cpp"
@@ -102,41 +105,75 @@ file(GLOB_RECURSE ENGINE_HEADERS CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp"
 )
 
+if(ATLAS_ENABLE_AI)
+    file(GLOB_RECURSE AI_SOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/ai/*.cpp"
+    )
+    list(APPEND ENGINE_SOURCES ${AI_SOURCES})
+    add_compile_definitions(ATLAS_ENABLE_AI)
+    message(STATUS "AtlasEngine: AI subsystems ENABLED")
+else()
+    message(STATUS "AtlasEngine: AI subsystems DISABLED (pass -DATLAS_ENABLE_AI=ON to enable)")
+endif()
+
 # ---------------------------------------------------------------------------
 # Engine library
 # ---------------------------------------------------------------------------
-add_library(subspace_engine STATIC
+add_library(atlas_engine STATIC
     ${ENGINE_SOURCES}
     ${ENGINE_HEADERS}
 )
 
-target_include_directories(subspace_engine PUBLIC
+# Keep legacy alias so any third-party cmake files using subspace_engine still work
+add_library(subspace_engine ALIAS atlas_engine)
+
+target_include_directories(atlas_engine PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
-target_link_libraries(subspace_engine PUBLIC
+target_link_libraries(atlas_engine PUBLIC
     OpenGL::GL
 )
 
 if(SUBSPACE_USE_GLFW)
-    target_link_libraries(subspace_engine PUBLIC glfw)
+    target_link_libraries(atlas_engine PUBLIC glfw)
 endif()
 
 # ---------------------------------------------------------------------------
 # Game executable
 # ---------------------------------------------------------------------------
-add_executable(subspace_game
+add_executable(atlas_game
     "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
 )
 
-target_link_libraries(subspace_game PRIVATE
-    subspace_engine
+target_link_libraries(atlas_game PRIVATE
+    atlas_engine
 )
+
+# Legacy alias target
+add_executable(subspace_game ALIAS atlas_game)
+
+# ---------------------------------------------------------------------------
+# Editor executable
+# ---------------------------------------------------------------------------
+if(ATLAS_BUILD_EDITOR)
+    add_executable(atlas_editor
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/editor_main.cpp"
+    )
+
+    target_link_libraries(atlas_editor PRIVATE
+        atlas_engine
+    )
+
+    message(STATUS "AtlasEngine: Editor build ENABLED (atlas_editor)")
+else()
+    message(STATUS "AtlasEngine: Editor build DISABLED (pass -DATLAS_BUILD_EDITOR=ON to enable)")
+endif()
 
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
-if(SUBSPACE_BUILD_TESTS)
+if(ATLAS_BUILD_TESTS OR SUBSPACE_BUILD_TESTS)
     enable_testing()
 
     file(GLOB_RECURSE TEST_SOURCES CONFIGURE_DEPENDS
@@ -144,12 +181,15 @@ if(SUBSPACE_BUILD_TESTS)
     )
 
     if(TEST_SOURCES)
-        add_executable(subspace_tests ${TEST_SOURCES})
+        add_executable(atlas_tests ${TEST_SOURCES})
 
-        target_link_libraries(subspace_tests PRIVATE
-            subspace_engine
+        target_link_libraries(atlas_tests PRIVATE
+            atlas_engine
         )
 
-        add_test(NAME SubspaceTests COMMAND subspace_tests)
+        # Legacy alias
+        add_executable(subspace_tests ALIAS atlas_tests)
+
+        add_test(NAME AtlasTests COMMAND atlas_tests)
     endif()
 endif()
