@@ -5,8 +5,9 @@
 
 namespace subspace {
 
-static constexpr float kPi        = 3.14159265f;
-static constexpr float kDegToRad  = kPi / 180.0f;
+static constexpr float kPi              = 3.14159265358979f;
+static constexpr float kDegToRad        = kPi / 180.0f;
+static constexpr float kRayParallelEps  = 1e-6f;
 
 // ---------------------------------------------------------------------------
 // EditorCamera
@@ -116,10 +117,10 @@ EditorRaycastResult EditorViewport::Raycast(float screenX, float screenY) const 
     float cy = std::cos(yawRad),  sy = std::sin(yawRad);
     float cp = std::cos(pitchRad), sp = std::sin(pitchRad);
 
-    // Camera basis vectors
+    // Camera basis vectors (right-handed, Y-up)
     Vector3 camRight   = {  cy, 0.0f, -sy };
-    Vector3 camUp      = {  sy * sp, cp, cy * sp };
-    Vector3 camForward = { -sy * cp, sp, -cy * cp };
+    Vector3 camUp      = { -sy * sp, cp, -cy * sp };
+    Vector3 camForward = {  sy * cp, sp,  cy * cp };
 
     // Transform local direction to world space
     Vector3 worldDir = {
@@ -134,7 +135,7 @@ EditorRaycastResult EditorViewport::Raycast(float screenX, float screenY) const 
     // Intersect with the Y = hoverY plane
     float hoverY = static_cast<float>(m_controller.GetState().hoverCell.y);
 
-    if (std::abs(worldDir.y) < 1e-6f) {
+    if (std::abs(worldDir.y) < kRayParallelEps) {
         return result; // Ray is parallel to the grid plane
     }
 
