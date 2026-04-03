@@ -41,6 +41,8 @@ struct Vector3 {
     constexpr Vector3() = default;
     constexpr Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
 
+    static constexpr Vector3 Zero() { return {0.0f, 0.0f, 0.0f}; }
+
     constexpr Vector3 operator+(const Vector3& o) const { return {x + o.x, y + o.y, z + o.z}; }
     constexpr Vector3 operator-(const Vector3& o) const { return {x - o.x, y - o.y, z - o.z}; }
     constexpr Vector3 operator*(float s)          const { return {x * s, y * s, z * s}; }
