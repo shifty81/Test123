@@ -69,6 +69,16 @@ public:
     /// Tear down all subsystems and release resources.
     void Shutdown();
 
+    // ----- editor mode -----
+
+    /// Enable editor mode **before** calling Initialize().  When set, the
+    /// engine skips all gameplay simulation systems (physics, combat,
+    /// navigation, mining, quests, etc.) and only registers the UI system.
+    /// This keeps the editor lightweight and avoids interference from
+    /// game-logic updates.
+    void SetEditorMode(bool isEditor) { _editorMode = isEditor; }
+    bool IsEditorMode() const { return _editorMode; }
+
     // ----- state -----
 
     /// Pause the simulation (systems stop updating, but events are still
@@ -123,6 +133,7 @@ private:
     void RenderFrame();
 
     EngineState _state = EngineState::Uninitialized;
+    bool             _editorMode = false;
 
     EntityManager    _entityManager;
     GalaxyGenerator  _galaxyGenerator;
