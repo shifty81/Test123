@@ -101,6 +101,11 @@
 #include "fleet/FleetCommandSystem.h"
 #include "rendering/PostProcessingSystem.h"
 #include "rendering/ShadowSystem.h"
+#include "ship_editor/EditorCommandRegistry.h"
+#include "ship_editor/EditorToolContext.h"
+#include "ship_editor/SelectionService.h"
+#include "ship_editor/PropertyInspectorSystem.h"
+#include "ship_editor/EditorViewport.h"
 
 using namespace subspace;
 
@@ -14703,8 +14708,285 @@ static void TestPostProcessShadowGameEvents() {
 }
 
 // ===================================================================
-// Main
+// Editor Suite Tests — CommandHistory, EditorCommandRegistry,
+// SelectionService, PropertyInspectorSystem, EditorToolContext,
+// EditorViewport, Engine editor-mode
 // ===================================================================
+
+static void TestCommandHistory() {
+    std::cout << "[CommandHistory]\n";
+
+    CommandHistory history;
+    TEST("Initial CanUndo false", !history.CanUndo());
+    TEST("Initial CanRedo false", !history.CanRedo());
+    TEST("Initial UndoCount 0", history.UndoCount() == 0);
+    TEST("Initial RedoCount 0", history.RedoCount() == 0);
+
+    // Create a simple command that increments/decrements a counter.
+    int counter = 0;
+    struct CounterCmd : public IEditorCommand {
+        int& val;
+        CounterCmd(int& v) : val(v) {}
+        void Execute() override { val++; }
+        void Undo() override { val--; }
+    };
+
+    history.Push(std::make_shared<CounterCmd>(counter));
+    TEST("After push counter is 1", counter == 1);
+    TEST("CanUndo after push", history.CanUndo());
+    TEST("UndoCount 1", history.UndoCount() == 1);
+
+    history.Push(std::make_shared<CounterCmd>(counter));
+    TEST("After second push counter is 2", counter == 2);
+    TEST("UndoCount 2", history.UndoCount() == 2);
+
+    history.UndoLast();
+    TEST("After undo counter is 1", counter == 1);
+    TEST("UndoCount 1 after undo", history.UndoCount() == 1);
+    TEST("CanRedo after undo", history.CanRedo());
+    TEST("RedoCount 1", history.RedoCount() == 1);
+
+    history.RedoLast();
+    TEST("After redo counter is 2", counter == 2);
+    TEST("UndoCount 2 after redo", history.UndoCount() == 2);
+    TEST("RedoCount 0 after redo", history.RedoCount() == 0);
+
+    // Push clears redo stack.
+    history.UndoLast();
+    TEST("Redo available before new push", history.CanRedo());
+    history.Push(std::make_shared<CounterCmd>(counter));
+    TEST("Redo cleared after new push", !history.CanRedo());
+
+    history.Clear();
+    TEST("After clear CanUndo false", !history.CanUndo());
+    TEST("After clear CanRedo false", !history.CanRedo());
+}
+
+static void TestEditorCommandRegistry() {
+    std::cout << "[EditorCommandRegistry]\n";
+
+    EditorCommandRegistry registry;
+    TEST("Initial count 0", registry.Count() == 0);
+
+    int callCount = 0;
+    bool registered = registry.Register({
+        "Test.Cmd", "Test Command",
+        [&]() { return callCount < 3; },
+        [&]() { callCount++; }
+    });
+    TEST("Register succeeds", registered);
+    TEST("Count is 1", registry.Count() == 1);
+
+    // Duplicate registration fails.
+    bool dup = registry.Register({
+        "Test.Cmd", "Duplicate",
+        [&]() { return true; },
+        [&]() {}
+    });
+    TEST("Duplicate register fails", !dup);
+    TEST("Count still 1", registry.Count() == 1);
+
+    // Find and execute.
+    const RegisteredCommand* found = registry.Find("Test.Cmd");
+    TEST("Find returns non-null", found != nullptr);
+    TEST("Find display name", found && found->displayName == "Test Command");
+
+    TEST("CanExecute true", registry.CanExecute("Test.Cmd"));
+    TEST("Execute succeeds", registry.Execute("Test.Cmd"));
+    TEST("callCount is 1", callCount == 1);
+
+    // Execute until canExecute returns false.
+    registry.Execute("Test.Cmd"); // callCount=2
+    registry.Execute("Test.Cmd"); // callCount=3
+    TEST("CanExecute false after limit", !registry.CanExecute("Test.Cmd"));
+    TEST("Execute fails when not executable", !registry.Execute("Test.Cmd"));
+    TEST("callCount stayed at 3", callCount == 3);
+
+    // Unknown command.
+    TEST("Find unknown returns null", registry.Find("Unknown") == nullptr);
+    TEST("CanExecute unknown false", !registry.CanExecute("Unknown"));
+    TEST("Execute unknown false", !registry.Execute("Unknown"));
+
+    // GetRegisteredIds.
+    registry.Register({"Second.Cmd", "Second", [](){return true;}, [](){}});
+    auto ids = registry.GetRegisteredIds();
+    TEST("Two registered ids", ids.size() == 2);
+}
+
+static void TestSelectionService() {
+    std::cout << "[SelectionService]\n";
+
+    SelectionService svc;
+    TEST("Initial no selection", !svc.HasSelection());
+    TEST("Initial kind None", svc.GetKind() == SelectionKind::None);
+    TEST("Initial not changed", !svc.IsChanged());
+
+    svc.SelectBlock(Vector3Int(1, 2, 3));
+    TEST("Has selection after SelectBlock", svc.HasSelection());
+    TEST("Kind is Block", svc.GetKind() == SelectionKind::Block);
+    TEST("IsChanged true", svc.IsChanged());
+    TEST("Position matches", svc.GetSelection().position == Vector3Int(1, 2, 3));
+
+    svc.ClearChanged();
+    TEST("IsChanged false after clear", !svc.IsChanged());
+
+    std::vector<Vector3Int> positions = {{0,0,0}, {1,0,0}, {2,0,0}};
+    svc.SelectMultiBlock(positions);
+    TEST("Kind is MultiBlock", svc.GetKind() == SelectionKind::MultiBlock);
+    TEST("3 selected positions", svc.GetSelectedPositions().size() == 3);
+    TEST("IsChanged true after multi", svc.IsChanged());
+
+    svc.Clear();
+    TEST("No selection after clear", !svc.HasSelection());
+    TEST("Kind None after clear", svc.GetKind() == SelectionKind::None);
+}
+
+static void TestPropertyInspectorSystem() {
+    std::cout << "[PropertyInspectorSystem]\n";
+
+    PropertyInspectorSystem inspector;
+    TEST("Initial has no properties", !inspector.HasProperties());
+    TEST("Initial not dirty", !inspector.IsDirty());
+
+    PropertySet ps;
+    ps.title = "Block Properties";
+    ps.entries.push_back({"Type", PropertyWidgetHint::ReadOnlyLabel, std::string("Hull"), std::string("Hull"), true, false});
+    ps.entries.push_back({"Material", PropertyWidgetHint::TextField, std::string("Iron"), std::string("Iron"), false, false});
+    ps.entries.push_back({"HP", PropertyWidgetHint::NumericField, 100.0f, 100.0f, false, false});
+    ps.entries.push_back({"Armored", PropertyWidgetHint::Checkbox, false, false, false, false});
+
+    inspector.SetPropertySet(ps);
+    TEST("Has properties after set", inspector.HasProperties());
+    TEST("Title matches", inspector.GetPropertySet().title == "Block Properties");
+    TEST("4 entries", inspector.GetPropertySet().entries.size() == 4);
+
+    // Apply edit to mutable property.
+    bool edited = inspector.ApplyEdit("Material", std::string("Titanium"));
+    TEST("ApplyEdit succeeds", edited);
+    TEST("Inspector is dirty", inspector.IsDirty());
+
+    // Read back.
+    const auto& entries = inspector.GetPropertySet().entries;
+    bool found = false;
+    for (const auto& e : entries) {
+        if (e.name == "Material") {
+            auto* val = std::get_if<std::string>(&e.value);
+            found = val && *val == "Titanium";
+        }
+    }
+    TEST("Material updated to Titanium", found);
+
+    // Apply to read-only should fail.
+    bool editRo = inspector.ApplyEdit("Type", std::string("Armor"));
+    TEST("ApplyEdit read-only fails", !editRo);
+
+    // Apply to unknown property.
+    bool editUnk = inspector.ApplyEdit("Unknown", 42);
+    TEST("ApplyEdit unknown fails", !editUnk);
+
+    inspector.ClearDirty();
+    TEST("Not dirty after ClearDirty", !inspector.IsDirty());
+
+    // Clear.
+    inspector.Clear();
+    TEST("No properties after clear", !inspector.HasProperties());
+
+    // ToDisplayString.
+    PropertyEntry strEntry;
+    strEntry.name = "Name";
+    strEntry.value = std::string("Test");
+    std::string display = PropertyInspectorSystem::ToDisplayString(strEntry);
+    TEST("ToDisplayString contains name", display.find("Name") != std::string::npos);
+    TEST("ToDisplayString contains value", display.find("Test") != std::string::npos);
+}
+
+static void TestEditorToolContext() {
+    std::cout << "[EditorToolContext]\n";
+
+    EditorToolContext ctx;
+    TEST("Default mode is Select", ctx.activeMode == EditorToolMode::Select);
+    TEST("Default not dirty", !ctx.worldDirty);
+    TEST("Default camera nav false", !ctx.cameraNavigationActive);
+
+    ctx.activeMode = EditorToolMode::Place;
+    TEST("Mode set to Place", ctx.activeMode == EditorToolMode::Place);
+
+    TEST("Select name", std::string(EditorToolModeName(EditorToolMode::Select)) == "Select");
+    TEST("Place name", std::string(EditorToolModeName(EditorToolMode::Place)) == "Place");
+    TEST("Remove name", std::string(EditorToolModeName(EditorToolMode::Remove)) == "Remove");
+    TEST("Paint name", std::string(EditorToolModeName(EditorToolMode::Paint)) == "Paint");
+    TEST("Inspect name", std::string(EditorToolModeName(EditorToolMode::Inspect)) == "Inspect");
+
+    ctx.worldDirty = true;
+    TEST("World dirty set", ctx.worldDirty);
+}
+
+static void TestEditorViewportCamera() {
+    std::cout << "[EditorViewport Camera]\n";
+
+    Ship ship;
+    ShipEditorController controller(ship);
+    EditorViewport viewport(controller);
+
+    auto& cam = viewport.GetCamera();
+    TEST("Default distance 30", cam.distance == 30.0f);
+    TEST("Default fov 60", cam.fov == 60.0f);
+    TEST("Default mode orbit", cam.mode == EditorCameraMode::Orbit);
+
+    cam.OrbitBy(45.0f, 15.0f);
+    TEST("Yaw changed after orbit", cam.yaw == 45.0f);
+    TEST("Pitch changed after orbit", cam.pitch == 45.0f);
+
+    // Pitch clamping.
+    cam.OrbitBy(0.0f, 200.0f);
+    TEST("Pitch clamped to 89", cam.pitch <= 89.0f);
+    cam.OrbitBy(0.0f, -400.0f);
+    TEST("Pitch clamped to -89", cam.pitch >= -89.0f);
+
+    cam.Reset();
+    TEST("After reset yaw 0", cam.yaw == 0.0f);
+    TEST("After reset pitch 30", cam.pitch == 30.0f);
+    TEST("After reset distance 30", cam.distance == 30.0f);
+
+    cam.Zoom(-10.0f);
+    TEST("Zoom decreased distance", cam.distance == 20.0f);
+    cam.Zoom(1000.0f);
+    TEST("Zoom clamped to max", cam.distance <= 500.0f);
+    cam.Zoom(-10000.0f);
+    TEST("Zoom clamped to min", cam.distance >= 1.0f);
+
+    // GetPosition should return non-zero for non-zero distance.
+    cam.Reset();
+    Vector3 pos = cam.GetPosition();
+    TEST("Camera position non-zero", !(pos.x == 0 && pos.y == 0 && pos.z == 0));
+
+    // Screen size.
+    viewport.SetScreenSize(1280.0f, 720.0f);
+    TEST("Screen width set", viewport.GetScreenWidth() == 1280.0f);
+    TEST("Screen height set", viewport.GetScreenHeight() == 720.0f);
+}
+
+static void TestEngineEditorMode() {
+    std::cout << "[Engine Editor Mode]\n";
+
+    Engine engine;
+    TEST("Default not editor mode", !engine.IsEditorMode());
+
+    engine.SetEditorMode(true);
+    TEST("Editor mode set", engine.IsEditorMode());
+
+    engine.SetMaxFrames(1);
+    engine.Initialize();
+    TEST("Engine running after init", engine.IsRunning());
+
+    engine.Run();
+    TEST("Engine stopped after 1 frame", engine.GetState() == EngineState::ShuttingDown ||
+                                          engine.GetState() == EngineState::Stopped ||
+                                          engine.GetFrameCount() >= 1);
+
+    engine.Shutdown();
+    TEST("Engine stopped after shutdown", engine.GetState() == EngineState::Stopped);
+}
 int main() {
     std::cout << "=== Subspace Engine Unit Tests ===\n\n";
 

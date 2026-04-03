@@ -191,19 +191,26 @@ void Engine::RegisterSystems()
 {
     Logger::Instance().Debug(kLogCategory, "Registering systems...");
 
-    _entityManager.RegisterSystem(std::make_unique<PhysicsSystem>(_entityManager));
-    _entityManager.RegisterSystem(std::make_unique<CombatSystem>());
-    _entityManager.RegisterSystem(std::make_unique<NavigationSystem>());
-    _entityManager.RegisterSystem(std::make_unique<PowerSystem>());
+    if (!_editorMode) {
+        // Full gameplay systems — only in game mode.
+        _entityManager.RegisterSystem(std::make_unique<PhysicsSystem>(_entityManager));
+        _entityManager.RegisterSystem(std::make_unique<CombatSystem>());
+        _entityManager.RegisterSystem(std::make_unique<NavigationSystem>());
+        _entityManager.RegisterSystem(std::make_unique<PowerSystem>());
 #ifdef ATLAS_ENABLE_AI
-    _entityManager.RegisterSystem(std::make_unique<AIDecisionSystem>());
+        _entityManager.RegisterSystem(std::make_unique<AIDecisionSystem>());
 #endif
-    _entityManager.RegisterSystem(std::make_unique<MiningSystem>());
-    _entityManager.RegisterSystem(std::make_unique<QuestSystem>());
-    _entityManager.RegisterSystem(std::make_unique<TutorialSystem>());
-    _entityManager.RegisterSystem(std::make_unique<ParticleSystem>());
-    _entityManager.RegisterSystem(std::make_unique<AchievementSystem>());
+        _entityManager.RegisterSystem(std::make_unique<MiningSystem>());
+        _entityManager.RegisterSystem(std::make_unique<QuestSystem>());
+        _entityManager.RegisterSystem(std::make_unique<TutorialSystem>());
+        _entityManager.RegisterSystem(std::make_unique<ParticleSystem>());
+        _entityManager.RegisterSystem(std::make_unique<AchievementSystem>());
+    } else {
+        Logger::Instance().Info(kLogCategory,
+            "Editor mode: skipping gameplay systems.");
+    }
 
+    // UISystem is needed in both editor and game modes.
     auto uiSystemPtr = std::make_unique<UISystem>();
     _uiSystem = uiSystemPtr.get();
     _entityManager.RegisterSystem(std::move(uiSystemPtr));
